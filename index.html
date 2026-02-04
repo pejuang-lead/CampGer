@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meta Ads Manager Dashboard v6</title>
+    <!-- SweetAlert2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Default Theme Color (Will be overridden by JS) */
+            --account-theme: #1877f2; 
+            
+            --bg-body: #f0f2f5;
+            --text-main: #1c1e21;
+            --text-secondary: #65676b;
+            --meta-green: #42b72a;
+            --meta-gray: #ccd0d5;
+            --danger-red: #d32f2f;
+            
+            /* Performance Colors */
+            --color-winning: #ffc107; /* Gold */
+            --bg-winning: #fffbf2;
+            --color-super: #00bcd4; /* Cyan/Diamond */
+            --bg-super: #e0f7fa;
+
+            /* Level Colors */
+            --bg-campaign: #f7f8fa;
+            --border-campaign: #1c1e21; 
+            --bg-adset: #ffffff;
+            --border-adset: #e4e6eb;
+            --bg-ad: #ffffff;
+            --border-ad: #e4e6eb;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s;
+        }
+
+        /* --- Header Section --- */
+        .dashboard-header {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-top: 4px solid var(--account-theme); /* Visual cues for account color */
+            transition: border-color 0.3s;
+        }
+
+        .account-control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f0f2f5;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+
+        .account-icon { color: var(--account-theme); font-size: 18px; transition: color 0.3s; }
+
+        select.account-selector {
+            border: none; background: transparent; font-size: 16px; font-weight: 700;
+            color: var(--text-main); outline: none; cursor: pointer;
+            min-width: 150px; max-width: 300px; padding: 5px;
+        }
+
+        .account-actions { display: flex; gap: 5px; }
+
+        .btn-icon {
+            background: transparent; border: none; cursor: pointer; padding: 6px;
+            border-radius: 4px; color: var(--text-secondary); transition: background 0.2s;
+        }
+        .btn-icon:hover { background: #e4e6eb; color: var(--text-main); }
+        .btn-icon.delete:hover { background: #feebe8; color: var(--danger-red); }
+
+        /* Filter Group */
+        .filter-group {
+            display: flex;
+            background: #f0f2f5;
+            padding: 4px;
+            border-radius: 6px;
+            gap: 4px;
+        }
+        
+        .btn-filter {
+            border: none;
+            background: transparent;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .btn-filter:hover { background: #e4e6eb; }
+        
+        .btn-filter.active {
+            background: white;
+            color: var(--account-theme);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .action-bar { display: flex; gap: 10px; align-items: center; }
+
+        /* --- Buttons --- */
+        button.btn-std {
+            cursor: pointer; border: none; border-radius: 6px; padding: 8px 14px;
+            font-weight: 600; font-size: 13px; transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .btn-primary { 
+            background: var(--account-theme); 
+            color: white; 
+            transition: background 0.3s;
+        }
+        .btn-primary:hover { filter: brightness(90%); box-shadow: 0 2px 5px rgba(0,0,0, 0.2); }
+        
+        .btn-outline { background: white; border: 1px solid #ddd; color: var(--text-main); }
+        .btn-outline:hover { background: #f2f2f2; }
+        
+        .btn-danger { background: #feebe8; color: #d32f2f; }
+        .btn-danger:hover { background: #f9d6d2; }
+        
+        .btn-sm { padding: 4px 8px; font-size: 11px; margin-left: 5px; }
+
+        /* --- Toggle Switch --- */
+        .toggle-switch {
+            position: relative; display: inline-block; width: 36px; height: 20px;
+            margin-right: 12px; flex-shrink: 0;
+        }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .3s; border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px;
+            background-color: white; transition: .3s; border-radius: 50%;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        input:checked + .slider { background-color: var(--account-theme); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        /* --- Node Structure --- */
+        #campaign-list {
+            display: flex; flex-direction: column; gap: 12px; padding-bottom: 50px;
+        }
+
+        .node-container {
+            border-radius: 6px; overflow: hidden; transition: all 0.2s ease; position: relative;
+        }
+
+        /* Inactive State */
+        .node-container.inactive > .node-header {
+            opacity: 0.7; background-color: #f8f9fa !important; border-left-color: #ccc !important;
+        }
+        .node-container.inactive > .node-header .node-title { color: var(--text-secondary); }
+
+        /* Winning & Super Winning States */
+        .node-container.winning > .node-header {
+            border-left-color: var(--color-winning) !important;
+            background-color: var(--bg-winning);
+        }
+        
+        .node-container.super-winning > .node-header {
+            border-left-color: var(--color-super) !important;
+            background-color: var(--bg-super);
+            box-shadow: 0 0 8px rgba(0, 188, 212, 0.2);
+        }
+
+        .node-header {
+            display: flex; align-items: center; padding: 10px 15px;
+            background: white; border: 1px solid #e4e6eb; cursor: pointer;
+        }
+        .node-header:hover { background-color: #f7f8fa; }
+
+        /* Levels Indentation */
+        .level-campaign { box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .level-campaign > .node-header {
+            background-color: #fdfdfd; border-left: 4px solid var(--account-theme);
+            padding-top: 15px; padding-bottom: 15px;
+        }
+        .level-adset { margin-left: 24px; margin-top: -1px; }
+        .level-adset > .node-header { border-left: 4px solid #aebac9; }
+        .level-ad { margin-left: 48px; margin-top: -1px; }
+        .level-ad > .node-header { border-left: 4px solid #e4e6eb; padding-top: 8px; padding-bottom: 8px; }
+
+        /* Content */
+        .node-left { display: flex; align-items: center; flex-grow: 1; gap: 8px; overflow: hidden; }
+        
+        .expand-btn {
+            width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+            color: var(--text-secondary); font-size: 10px; cursor: pointer; border-radius: 50%;
+        }
+        .expand-btn:hover { background: #e4e6eb; }
+        .expand-btn.hidden { visibility: hidden; pointer-events: none; }
+
+        .node-title {
+            font-weight: 500; font-size: 14px; width: 100%; margin-left: 5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: flex; align-items: center; gap: 8px;
+            transition: color 0.2s;
+        }
+        .node-title:hover {
+            color: var(--account-theme);
+            text-decoration: underline;
+        }
+        .level-campaign > .node-header .node-title { font-weight: 700; font-size: 15px; }
+
+        /* Performance Badges */
+        .perf-badge {
+            font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;
+            display: flex; align-items: center; gap: 3px; text-transform: uppercase;
+        }
+        .perf-badge.winning { background: #fff8e1; color: #ff8f00; border: 1px solid #ffecb3; }
+        .perf-badge.super { background: #e0f7fa; color: #0097a7; border: 1px solid #b2ebf2; }
+
+        .edit-input {
+            width: 100%; padding: 4px 8px; font-size: 14px;
+            border: 2px solid var(--account-theme); border-radius: 4px; outline: none;
+        }
+
+        .node-actions { display: flex; opacity: 0; transition: opacity 0.2s; gap: 2px; }
+        .node-header:hover .node-actions { opacity: 1; }
+
+        .children-container { display: block; }
+        .children-container.collapsed { display: none; }
+        .children-container.hidden-by-filter { display: none !important; }
+
+        @media (max-width: 600px) {
+            .node-actions { opacity: 1; }
+            .dashboard-header { flex-direction: column; align-items: flex-start; }
+            .account-control-group { width: 100%; justify-content: space-between; }
+            select.account-selector { flex-grow: 1; }
+            .action-bar { width: 100%; justify-content: space-between; overflow-x: auto; flex-wrap: wrap; }
+            .filter-group { width: 100%; justify-content: space-between; margin-top: 10px; }
+            .btn-filter { flex-grow: 1; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-header">
+        <div class="account-control-group">
+            <i class="fas fa-briefcase account-icon"></i>
+            <select id="accountSelector" class="account-selector" onchange="switchAccount(this.value)">
+                <!-- JS populated -->
+            </select>
+            <div class="account-actions">
+                <button class="btn-icon" onclick="changeAccountColor()" title="Ganti Warna Akun (Tema)"><i class="fas fa-palette"></i></button>
+                <button class="btn-icon" onclick="renameCurrentAccount()" title="Ganti Nama Akun"><i class="fas fa-pen"></i></button>
+                <button class="btn-icon" onclick="addNewAccount()" title="Tambah Akun Baru"><i class="fas fa-plus"></i></button>
+                <button class="btn-icon delete" onclick="deleteCurrentAccount()" title="Hapus Akun Ini"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <button class="btn-filter active" id="filter-all" onclick="setFilter('all')">Semua</button>
+            <button class="btn-filter" id="filter-winning" onclick="setFilter('winning')">🏆 Winning</button>
+            <button class="btn-filter" id="filter-super-winning" onclick="setFilter('super-winning')">💎 Super</button>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-std btn-primary" onclick="addRootCampaign()"><i class="fas fa-plus"></i> Campaign</button>
+            <button class="btn-std btn-outline" onclick="saveToJSON()"><i class="fas fa-download"></i> Export</button>
+            <button class="btn-std btn-danger" onclick="resetAllData()"><i class="fas fa-sync"></i></button>
+        </div>
+    </div>
+
+    <div id="campaign-list">
+        <!-- JS Rendered -->
+    </div>
+
+<script>
+    // --- Data Model v6 ---
+    const defaultData = {
+        selectedAccountId: 'acc_01',
+        accounts: [
+            {
+                id: 'acc_01',
+                name: 'Akun Iklan Utama',
+                themeColor: '#1877f2', // Default Blue
+                campaigns: [
+                    {
+                        id: 'c1', type: 'campaign', name: 'CONTOH - LEAD GEN', active: true, performance: 'normal', isExpanded: true, children: [
+                             { id: 'as1', type: 'adset', name: 'ADSET | JABODETABEK', active: true, performance: 'winning', isExpanded: true, children: [] }
+                        ]
+                    }
+                ]
+            }
+        ]
+    };
+
+    let appData = JSON.parse(localStorage.getItem('metaAdsV6')) || defaultData;
+    // Migration checks
+    if (!appData.accounts || !Array.isArray(appData.accounts)) appData = defaultData;
+    
+    // Ensure every account has a theme color (migration from v5)
+    appData.accounts.forEach(acc => {
+        if (!acc.themeColor) acc.themeColor = '#1877f2';
+    });
+
+    let editingId = null;
+    let currentFilter = 'all'; // 'all', 'winning', 'super-winning'
+
+    // --- Helpers ---
+    function getCurrentAccount() {
+        return appData.accounts.find(acc => acc.id === appData.selectedAccountId) || appData.accounts[0];
+    }
+
+    function getCampaigns() {
+        return getCurrentAccount().campaigns;
+    }
+
+    function save() {
+        localStorage.setItem('metaAdsV6', JSON.stringify(appData));
+        render();
+    }
+
+    function generateId() { return Math.random().toString(36).substr(2, 9); }
+
+    // --- Core Account Logic & Theming ---
+    function switchAccount(id) {
+        appData.selectedAccountId = id;
+        applyTheme();
+        save();
+        const acc = getCurrentAccount();
+        const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+        Toast.fire({ icon: 'info', title: `Beralih ke: ${acc.name}` });
+    }
+
+    function applyTheme() {
+        const acc = getCurrentAccount();
+        const color = acc.themeColor || '#1877f2';
+        document.documentElement.style.setProperty('--account-theme', color);
+    }
+
+    async function changeAccountColor() {
+        const colors = {
+            '#1877f2': 'Meta Blue',
+            '#d32f2f': 'Klien Merah (Red)',
+            '#42b72a': 'Klien Hijau (Green)',
+            '#9c27b0': 'Klien Ungu (Purple)',
+            '#ff9800': 'Klien Oranye (Orange)',
+            '#263238': 'Dark Mode (Black)'
+        };
+
+        const { value: color } = await Swal.fire({
+            title: 'Pilih Warna Tema Akun',
+            input: 'select',
+            inputOptions: colors,
+            inputValue: getCurrentAccount().themeColor,
+            showCancelButton: true,
+            confirmButtonColor: getCurrentAccount().themeColor
+        });
+
+        if (color) {
+            getCurrentAccount().themeColor = color;
+            applyTheme();
+            save();
+        }
+    }
+
+    async function addNewAccount() {
+        const { value: name } = await Swal.fire({
+            title: 'Buat Akun Iklan Baru', input: 'text', inputLabel: 'Nama Akun / Klien',
+            inputValue: 'Akun Baru', showCancelButton: true, confirmButtonColor: '#1877f2'
+        });
+        if (name) {
+            const newId = 'acc_' + Date.now();
+            appData.accounts.push({ id: newId, name: name, themeColor: '#1877f2', campaigns: [] });
+            appData.selectedAccountId = newId;
+            save();
+            Swal.fire('Berhasil', 'Akun baru telah dibuat.', 'success');
+        }
+    }
+
+    async function renameCurrentAccount() {
+        const currentAcc = getCurrentAccount();
+        const { value: name } = await Swal.fire({
+            title: 'Ganti Nama Akun', input: 'text', inputValue: currentAcc.name,
+            showCancelButton: true, confirmButtonColor: '#1877f2'
+        });
+        if (name) { currentAcc.name = name; save(); }
+    }
+
+    function deleteCurrentAccount() {
+        if (appData.accounts.length <= 1) return Swal.fire('Error', 'Minimal harus ada 1 akun.', 'error');
+        Swal.fire({
+            title: 'Hapus Akun Ini?', text: "Data tidak bisa dikembalikan!", icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#d32f2f', confirmButtonText: 'Hapus'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                appData.accounts = appData.accounts.filter(acc => acc.id !== getCurrentAccount().id);
+                appData.selectedAccountId = appData.accounts[0].id;
+                save();
+                Swal.fire('Terhapus', '', 'success');
+            }
+        });
+    }
+
+    // --- Filtering Logic ---
+    function setFilter(filterType) {
+        currentFilter = filterType;
+        
+        // Update Button UI
+        document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`filter-${filterType}`).classList.add('active');
+        
+        render();
+    }
+
+    // Recursive function to check if a node or any of its children matches the filter
+    function matchesFilter(node, filter) {
+        if (filter === 'all') return true;
+        
+        // Check self
+        if (node.performance === filter) return true;
+        
+        // Check children
+        if (node.children && node.children.length > 0) {
+            return node.children.some(child => matchesFilter(child, filter));
+        }
+        
+        return false;
+    }
+
+    // --- Render ---
+    function render() {
+        applyTheme(); // Ensure theme is active
+
+        // Account Selector
+        const selector = document.getElementById('accountSelector');
+        selector.innerHTML = '';
+        appData.accounts.forEach(acc => {
+            const option = document.createElement('option');
+            option.value = acc.id;
+            option.textContent = acc.name;
+            if (acc.id === appData.selectedAccountId) option.selected = true;
+            selector.appendChild(option);
+        });
+
+        // Campaigns
+        const container = document.getElementById('campaign-list');
+        container.innerHTML = '';
+        const campaigns = getCampaigns();
+
+        if (campaigns.length === 0) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:60px 20px; color:#65676b; background:white; border-radius:8px; border:1px dashed #ccc;">
+                    <i class="fas fa-folder-open" style="font-size:32px; margin-bottom:10px; color:#ccd0d5;"></i>
+                    <h3>Belum ada Campaign</h3>
+                    <p style="font-size:13px;">Klik "+ Campaign" untuk memulai.</p>
+                </div>`;
+            return;
+        }
+
+        let hasVisibleNodes = false;
+        campaigns.forEach(campaign => {
+            if (matchesFilter(campaign, currentFilter)) {
+                container.appendChild(createNodeElement(campaign, 0));
+                hasVisibleNodes = true;
+            }
+        });
+
+        if (!hasVisibleNodes && campaigns.length > 0) {
+             container.innerHTML = `
+                <div style="text-align:center; padding:40px; color:#65676b;">
+                    <i class="fas fa-filter" style="font-size:24px; margin-bottom:10px; color:#ccd0d5;"></i>
+                    <p>Tidak ada aset yang sesuai filter <strong>${currentFilter}</strong>.</p>
+                    <button class="btn-std btn-outline" style="margin:10px auto;" onclick="setFilter('all')">Tampilkan Semua</button>
+                </div>`;
+        }
+    }
+
+    function createNodeElement(node, level) {
+        const wrapper = document.createElement('div');
+        
+        let levelClass = 'level-campaign';
+        if (level === 1) levelClass = 'level-adset';
+        if (level === 2) levelClass = 'level-ad';
+
+        let perfClass = '';
+        if (node.performance === 'winning') perfClass = 'winning';
+        if (node.performance === 'super-winning') perfClass = 'super-winning';
+
+        wrapper.className = `node-container ${levelClass} ${!node.active ? 'inactive' : ''} ${perfClass}`;
+
+        const header = document.createElement('div');
+        header.className = 'node-header';
+        
+        // 1. Toggle
+        const toggleHtml = `
+            <label class="toggle-switch" onclick="event.stopPropagation()" title="Aktifkan/Matikan">
+                <input type="checkbox" ${node.active ? 'checked' : ''} onchange="toggleStatus('${node.id}')">
+                <span class="slider"></span>
+            </label>
+        `;
+
+        // 2. Expand
+        let expandHtml = `<div class="expand-btn hidden">●</div>`;
+        if (node.children && node.children.length > 0) {
+            expandHtml = `
+                <div class="expand-btn" onclick="toggleExpand(event, '${node.id}')">
+                    ${node.isExpanded ? '▼' : '▶'}
+                </div>
+            `;
+        }
+
+        // 3. Title & Badge
+        let badgeHtml = '';
+        if (node.performance === 'winning') badgeHtml = `<span class="perf-badge winning"><i class="fas fa-trophy"></i> WINNING</span>`;
+        if (node.performance === 'super-winning') badgeHtml = `<span class="perf-badge super"><i class="fas fa-gem"></i> SUPER</span>`;
+
+        let titleHtml = `
+            <span class="node-title" onclick="startEdit(event, '${node.id}')" title="Klik untuk edit nama">
+                ${escapeHtml(node.name)}
+                ${badgeHtml}
+            </span>`;
+            
+        if (editingId === node.id) {
+            titleHtml = `<input type="text" class="edit-input" id="input-${node.id}" value="${escapeHtml(node.name)}" onblur="finishEdit('${node.id}')" onkeydown="handleEnter(event, '${node.id}')" onclick="event.stopPropagation()">`;
+        }
+
+        // 4. Actions
+        let btnAdd = '';
+        if (level === 0) btnAdd = `<button class="btn-std btn-primary btn-sm" onclick="addChild(event, '${node.id}', 'adset')" title="Tambah Ad Set">+ Set</button>`;
+        if (level === 1) btnAdd = `<button class="btn-std btn-primary btn-sm" onclick="addChild(event, '${node.id}', 'ad')" title="Tambah Ad">+ Ad</button>`;
+        
+        let trophyColor = '#65676b';
+        if (node.performance === 'winning') trophyColor = '#ffc107';
+        if (node.performance === 'super-winning') trophyColor = '#00bcd4';
+
+        const actionHtml = `
+            <div class="node-actions" onclick="event.stopPropagation()">
+                ${btnAdd}
+                <button class="btn-std btn-outline btn-sm" onclick="duplicateNode(event, '${node.id}')" title="Duplikat (Copy)"><i class="fas fa-copy"></i></button>
+                <button class="btn-std btn-outline btn-sm" style="color:${trophyColor}" onclick="setPerformance(event, '${node.id}')" title="Label Performa"><i class="fas fa-trophy"></i></button>
+                <button class="btn-std btn-outline btn-sm" onclick="startEdit(event, '${node.id}')" title="Edit Nama"><i class="fas fa-pen"></i></button>
+                <button class="btn-std btn-danger btn-sm" onclick="deleteNode(event, '${node.id}')" title="Hapus"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+
+        header.innerHTML = `
+            <div class="node-left">
+                ${expandHtml}
+                ${toggleHtml}
+                ${titleHtml}
+            </div>
+            ${actionHtml}
+        `;
+
+        header.onclick = (e) => {
+            if (e.target === header || e.target.classList.contains('node-left')) {
+                toggleExpand(e, node.id);
+            }
+        };
+
+        wrapper.appendChild(header);
+
+        // Children Render with Filter Logic
+        if (node.children && node.children.length > 0) {
+            const childrenContainer = document.createElement('div');
+            // If filtered, always expand to show the match
+            const shouldExpand = currentFilter !== 'all' ? true : node.isExpanded;
+            
+            childrenContainer.className = `children-container ${!shouldExpand ? 'collapsed' : ''}`;
+            
+            node.children.forEach(child => {
+                // Check recursive filter visibility
+                if (matchesFilter(child, currentFilter)) {
+                    childrenContainer.appendChild(createNodeElement(child, level + 1));
+                }
+            });
+            wrapper.appendChild(childrenContainer);
+        }
+
+        setTimeout(() => {
+            if (editingId === node.id) {
+                const input = document.getElementById(`input-${node.id}`);
+                if (input) { input.focus(); input.select(); }
+            }
+        }, 0);
+
+        return wrapper;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return text;
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    // --- Node Utils ---
+    function findNode(nodes, id) {
+        for (let node of nodes) {
+            if (node.id === id) return node;
+            if (node.children) {
+                const found = findNode(node.children, id);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    
+    function findParent(nodes, id, parent = null) {
+        for (let node of nodes) {
+            if (node.id === id) return parent;
+            if (node.children) {
+                const found = findParent(node.children, id, node);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+
+    // --- Actions ---
+    function toggleStatus(id) {
+        const node = findNode(getCampaigns(), id);
+        if (node) { node.active = !node.active; save(); }
+    }
+
+    function toggleExpand(e, id) {
+        if(e) e.stopPropagation();
+        const node = findNode(getCampaigns(), id);
+        if (node) { node.isExpanded = !node.isExpanded; save(); }
+    }
+
+    function addRootCampaign() {
+        const newCamp = {
+            id: generateId(), type: 'campaign', name: 'New Campaign',
+            active: true, performance: 'normal', isExpanded: true, children: []
+        };
+        getCurrentAccount().campaigns.unshift(newCamp);
+        editingId = newCamp.id;
+        save();
+    }
+
+    function addChild(e, parentId, type) {
+        if(e) e.stopPropagation();
+        const parent = findNode(getCampaigns(), parentId);
+        if (!parent) return;
+
+        const newChild = {
+            id: generateId(), type: type,
+            name: type === 'adset' ? 'New Ad Set' : 'New Ad',
+            active: true, performance: 'normal', isExpanded: true, children: []
+        };
+
+        parent.children = parent.children || [];
+        parent.children.push(newChild);
+        parent.isExpanded = true;
+        editingId = newChild.id;
+        save();
+    }
+
+    function duplicateNode(e, id) {
+        if(e) e.stopPropagation();
+        const campaigns = getCampaigns();
+        
+        function deepClone(node) {
+            const newNode = JSON.parse(JSON.stringify(node));
+            newNode.id = generateId(); 
+            newNode.name = newNode.name + ' (Copy)';
+            if (newNode.children) {
+                newNode.children = newNode.children.map(child => deepClone(child));
+            }
+            return newNode;
+        }
+
+        const rootIdx = campaigns.findIndex(c => c.id === id);
+        if (rootIdx > -1) {
+            const clone = deepClone(campaigns[rootIdx]);
+            campaigns.splice(rootIdx + 1, 0, clone);
+            save();
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+            Toast.fire({ icon: 'success', title: 'Campaign Diduplikasi' });
+            return;
+        }
+
+        const parent = findParent(campaigns, id);
+        if (parent) {
+            const childIdx = parent.children.findIndex(c => c.id === id);
+            if (childIdx > -1) {
+                const clone = deepClone(parent.children[childIdx]);
+                parent.children.splice(childIdx + 1, 0, clone);
+                save();
+                const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+                Toast.fire({ icon: 'success', title: 'Item Diduplikasi' });
+            }
+        }
+    }
+
+    // --- Performance Labeling with AI SUGGESTION ---
+    async function setPerformance(e, id) {
+        if(e) e.stopPropagation();
+        const node = findNode(getCampaigns(), id);
+        
+        const { value: status } = await Swal.fire({
+            title: 'Label Performa',
+            input: 'radio',
+            inputValue: node.performance || 'normal',
+            inputOptions: {
+                'normal': 'Normal (Tidak ada label)',
+                'winning': '🏆 Winning (Bagus)',
+                'super-winning': '💎 Super Winning (Sangat Bagus)'
+            },
+            showCancelButton: true,
+            confirmButtonColor: getCurrentAccount().themeColor
+        });
+
+        if (status) {
+            node.performance = status;
+            save();
+
+            // --- AI Logic Trigger ---
+            // Jika status berubah menjadi 'super-winning', beri saran budget
+            if (status === 'super-winning') {
+                Swal.fire({
+                    title: '💎 Potensi Scaling Terdeteksi!',
+                    text: 'Ad Set ini Super Winning! Pertimbangkan untuk Scale Up budget sebesar 20% besok untuk memaksimalkan hasil.',
+                    icon: 'info',
+                    confirmButtonText: 'Siap, Mengerti!',
+                    confirmButtonColor: '#00bcd4',
+                    background: '#e0f7fa',
+                    iconColor: '#00bcd4'
+                });
+            }
+        }
+    }
+
+    function deleteNode(e, id) {
+        if(e) e.stopPropagation();
+        const campaigns = getCampaigns();
+        const rootIdx = campaigns.findIndex(c => c.id === id);
+        
+        const confirmDelete = async (msg) => {
+             return Swal.fire({
+                title: 'Hapus Item?', text: msg, icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Hapus'
+            });
+        };
+
+        if (rootIdx > -1) {
+            confirmDelete("Campaign dan isinya akan dihapus.").then((res) => {
+                if(res.isConfirmed) { campaigns.splice(rootIdx, 1); save(); }
+            });
+            return;
+        }
+
+        const parent = findParent(campaigns, id);
+        if (parent) {
+            const childIdx = parent.children.findIndex(c => c.id === id);
+            if (childIdx > -1) {
+                confirmDelete("Item ini akan dihapus.").then((res) => {
+                    if(res.isConfirmed) { parent.children.splice(childIdx, 1); save(); }
+                });
+            }
+        }
+    }
+
+    function startEdit(e, id) {
+        if(e) e.stopPropagation();
+        editingId = id;
+        render();
+    }
+
+    function finishEdit(id) {
+        const input = document.getElementById(`input-${id}`);
+        if (input && findNode(getCampaigns(), id)) {
+            findNode(getCampaigns(), id).name = input.value.trim();
+        }
+        editingId = null;
+        save();
+    }
+
+    function handleEnter(e, id) { if (e.key === 'Enter') finishEdit(id); }
+
+    function resetAllData() {
+        Swal.fire({
+            title: 'Hard Reset?', text: "Semua data akan hilang!", icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'RESET'
+        }).then((res) => {
+            if (res.isConfirmed) { localStorage.removeItem('metaAdsV6'); location.reload(); }
+        });
+    }
+
+    function saveToJSON() {
+        const currentAcc = getCurrentAccount();
+        const fileName = `meta_backup_${currentAcc.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        Swal.fire('Export Berhasil', '', 'success');
+    }
+
+    // Init
+    window.onload = () => { render(); };
+</script>
+
+</body>
+</html>
